@@ -52,7 +52,6 @@ This module defines the following Mux types:
     RoundRobinMux
     ChainMux
 '''
-import copy
 import six
 import numpy as np
 
@@ -112,25 +111,9 @@ class BaseMux(core.Streamer):
         # The number of copies is tracked with active_count_.
         self.active_count_ = 0
 
-    def __deepcopy__(self, memo):
-        """This override is required to handle copying the random_state:
-        when using `random_state=None`, the global state is used;
-        modules are not 'deepcopy-able', so we have to make a special case for
-        it.
-        """
-        cls = self.__class__
-        copy_result = cls.__new__(cls)
-        memo[id(self)] = copy_result
-        for k, v in six.iteritems(self.__dict__):
-            # You can't deepcopy a module! If rng is np.random, just pass
-            # it over without trying.
-            if k == 'rng' and v == np.random:
-                setattr(copy_result, k, v)
-            # In all other cases, assume a deepcopy is the right choice.
-            else:
-                setattr(copy_result, k, copy.deepcopy(v, memo))
+    def _no_deepcopy(self, k, v):
+        return k == 'rng' and v == np.random or super()._no_deepcopy(k, v)
 
-        return copy_result
 
     @property
     def is_activated_copy(self):

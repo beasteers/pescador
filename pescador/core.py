@@ -119,12 +119,20 @@ class Streamer(object):
         copy_result.__dict__.update(self.__dict__)
         return copy_result
 
+    _NO_DEEPCOPY = []
+
+    def _no_deepcopy(self, k, v):
+        return k in self._NO_DEEPCOPY
+
     def __deepcopy__(self, memo):
         cls = self.__class__
         copy_result = cls.__new__(cls)
         memo[id(self)] = copy_result
         for k, v in six.iteritems(self.__dict__):
-            setattr(copy_result, k, copy.deepcopy(v, memo))
+            if self._no_deepcopy(k, v):
+                setattr(copy_result, k, v)
+            else:
+                setattr(copy_result, k, copy.deepcopy(v, memo))
 
         return copy_result
 
