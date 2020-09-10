@@ -119,6 +119,11 @@ class BaseMux(core.Streamer):
     def _no_deepcopy(self, k, v):
         return k == 'rng' and v == np.random or super()._no_deepcopy(k, v)
 
+    def close(self):
+        if self.is_activated_copy:
+            for stream in self.streams_:
+                if hasattr(stream, 'close'):
+                    return stream.close()
 
     @property
     def is_activated_copy(self):

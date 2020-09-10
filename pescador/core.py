@@ -174,8 +174,13 @@ class Streamer(object):
             if self.active_count_ < 0:
                 raise PescadorError("Active stream count passed below 0 for {}"
                                     .format(self))
-
+        self.close()
         return False
+
+    def close(self):
+        if self.is_activated_copy:
+            if hasattr(self.stream_, 'close'):
+                return self.stream_.close()
 
     @property
     def active(self):
@@ -195,7 +200,7 @@ class Streamer(object):
         """Activates the stream."""
         if six.callable(self.streamer):
             # If it's a function, create the stream.
-            self.stream_ = self.streamer(*(self.args), **(self.kwargs))
+            self.stream_ = self.streamer(*self.args, **self.kwargs)
 
         else:
             # If it's iterable, use it directly.
@@ -221,10 +226,11 @@ class Streamer(object):
         '''
         # Use self as context manager / calls __enter__() => _activate()
         with self as active_streamer:
-            for n, obj in enumerate(active_streamer.stream_):
-                if max_iter is not None and n >= max_iter:
-                    break
-                yield obj
+            with active_streamer:  # so exit always gets called on active streamer
+                for n, obj in enumerate(active_streamer.stream_):
+                    if max_iter is not None and n >= max_iter:
+                        break
+                    yield obj
 
     def cycle(self, max_iter=None):
         '''Iterate from the streamer infinitely.
