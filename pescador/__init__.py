@@ -7,5 +7,6 @@ from .maps import *
 from .mux import *
 from .preload import *
 from .zmq_stream import *
+from .zmq_mux import *
 
 from .version import version as __version__
