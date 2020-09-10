@@ -111,6 +111,11 @@ class BaseMux(core.Streamer):
         # The number of copies is tracked with active_count_.
         self.active_count_ = 0
 
+    def __str__(self):
+        n_active = len(self.streams_) if self.streams_ else 'none'
+        return '<{} [{} streamers, {} active]>'.format(
+            self.__class__.__name__, self.n_streams, n_active)
+
     def _no_deepcopy(self, k, v):
         return k == 'rng' and v == np.random or super()._no_deepcopy(k, v)
 

@@ -113,6 +113,18 @@ class Streamer(object):
         # in the copy created.
         self.stream_ = None
 
+    def __str__(self):
+        # streamer get argument list
+        args = ['{!r}'.format(x) for x in self.args]
+        args.extend('{}={!r}'.format(k, v) for k, v in self.kwargs)
+        args = '({})'.format(', '.join(args)) if args else ''
+
+        # get streamer name
+        return '<{} ({}{})>'.format(
+            self.__class__.__name__,
+            getattr(self.streamer, '__name__', self.streamer),
+            args)
+
     def __copy__(self):
         cls = self.__class__
         copy_result = cls.__new__(cls)
