@@ -321,3 +321,29 @@ def streamable(function, *args, **kwargs):
     '''
 
     return Streamer(function, *args, **kwargs)
+
+
+class _WarmedUpStreamer(Streamer):
+    '''Normally streamers aren't activated until they are first iterated over.
+
+    This will activate each streamer as soon as iterate() is called.
+    '''
+    def _iterate_active(self, max_iter=None):
+        '''Iterate over items in the queue.'''
+        for n, obj in enumerate(self.stream_):  # like core.Streamer
+            if max_iter is not None and n >= max_iter:
+                break
+            yield obj
+
+    def _inner_iterate_wrapper(self, **kw):
+        with self as active:
+            with active:  # make sure __exit__ gets called on active
+                yield # warmup
+                yield from active._iterate_active(**kw)
+
+    def iterate(self, max_iter=None):
+        # Need to initialize the iterator first because otherwise they'll
+        # only be activated when they are first iterated over
+        gen = self._inner_iterate_wrapper(max_iter=max_iter)
+        next(gen)  # warmup
+        return gen
