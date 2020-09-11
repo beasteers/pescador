@@ -129,6 +129,10 @@ class ZMQMux(_WarmedUpStreamer):
     def __exit__(self, *exc):
         suppressed = (super().__exit__(*exc), self.pool.__exit__(*exc))
         return any(suppressed)
+    def _deactivate(self):
+        super()._deactivate()
+        self.pool.shutdown(wait=True)
+        self.pool = None
 
 
 class ZMQMuxStreamer(_WarmedUpStreamer):
@@ -177,7 +181,7 @@ class ZMQMuxStreamer(_WarmedUpStreamer):
             context.destroy()  # don't need the socket, clean up.
             self.stream_ = iter(())
 
-    def close(self):
+    def _deactivate(self):
         '''Send terminate to worker.'''
         if self._terminate is not None:
             try:  # notify zmq worker to exit
@@ -191,7 +195,6 @@ class ZMQMuxStreamer(_WarmedUpStreamer):
                 self._future.cancel()
         # cleanup
         self._terminate = self._future = None
-        super().close()
 
 
 def restart_pool(pool):
@@ -204,6 +207,7 @@ def restart_pool(pool):
     pool.__dict__.clear()
     pool.__init__(n_jobs)
     return pool
+        super()._deactivate()
 
 
 def iter_zmq_stream(socket):

@@ -27,6 +27,14 @@ class PreloadStreamer(_WarmedUpStreamer):
             self.thread.start()
         super()._activate()
 
+    def _deactivate(self):
+        super()._deactivate()
+        # close thread (can't close the current thread while inside)
+        self._running = False
+        if self.thread is not None and self.thread is not threading.current_thread():
+            self.thread.join()
+        self.thread = None
+
     def _iterate_stream_worker(self):
         '''thread worker that pulls items from the iterator and adds them to a queue.'''
         try:
@@ -61,11 +69,3 @@ class PreloadStreamer(_WarmedUpStreamer):
     def iterate(self, max_iter=None):
         self._max_iter = max_iter  # need to get this to remote worker somehow
         return super().iterate()
-
-    def close(self):
-        super().close()
-        # close thread (can't close the current thread while inside)
-        self._running = False
-        if self.thread is not None and self.thread is not threading.current_thread():
-            self.thread.join()
-        self.thread = None

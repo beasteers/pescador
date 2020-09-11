@@ -174,13 +174,9 @@ class Streamer(object):
             if self.active_count_ < 0:
                 raise PescadorError("Active stream count passed below 0 for {}"
                                     .format(self))
-        self.close()
+        else:
+            self._deactivate()
         return False
-
-    def close(self):
-        if self.is_activated_copy:
-            if hasattr(self.stream_, 'close'):
-                return self.stream_.close()
 
     @property
     def active(self):
@@ -205,6 +201,10 @@ class Streamer(object):
         else:
             # If it's iterable, use it directly.
             self.stream_ = iter(self.streamer)
+
+    def _deactivate(self):
+        if hasattr(self.stream_, 'close'):
+            return self.stream_.close()
 
     def iterate(self, max_iter=None):
         '''Instantiate an iterator.
