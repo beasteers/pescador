@@ -40,16 +40,19 @@ class PreloadStreamer(_WarmedUpStreamer):
         try:
             for i, x in enumerate(Streamer.iterate(self, self._max_iter)):
                 # custom blocking
-                while self.q.full() and self._running:
+                while self._running and self.q.full():
                     time.sleep(self._delay)
                 if not self._running:
                     return
 
                 self.q.put(x, block=False)
+                time.sleep(self._delay)
                 if not self._running:
                     return
         except BaseException as e:
             self._exception = e
+        finally:
+            self._running = False
 
     def _iterate_active(self, max_iter=None):
         '''Iterate over items in the queue.'''
@@ -65,6 +68,7 @@ class PreloadStreamer(_WarmedUpStreamer):
                 yield x
             if self._exception: # raise in main thread
                 raise self._exception
+            time.sleep(self._delay)
 
     def iterate(self, max_iter=None):
         self._max_iter = max_iter  # need to get this to remote worker somehow
