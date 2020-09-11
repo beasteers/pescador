@@ -57,7 +57,7 @@ class ZMQMux(_WarmedUpStreamer):
     """
     # don't copy certain items
     _NO_DEEPCOPY = ('pool',)
-
+    pool = None
     def __init__(self, mux, min_port=49152, max_port=65535, max_tries=100,
                  copy=False, timeout=5, mode='process', n_jobs=None):
         '''
@@ -96,39 +96,34 @@ class ZMQMux(_WarmedUpStreamer):
             RuntimeError(
                 'The number of zmq_mux workers ({}) must be greater than the '
                 'number of active streams ({}).'.format(n_jobs, n_active))
+        self.n_jobs = min(n_jobs or len(mux.streamers), len(mux.streamers))
 
         # create the pool
         if mode not in POOLS:
             raise ValueError('Invalid Pool type {!r}. Must be in {}'.format(
                 mode, set(POOLS)))
-
-        # create the pool and restrict the number of jobs to be no more
-        # than the total number of streamers.
-        self.n_jobs = min(n_jobs or len(mux.streamers), len(mux.streamers))
-        self.pool = POOLS[mode](self.n_jobs)
+        self.mode = mode
 
         # wrap the mux streamers in ZMQ pool workers
         # copy so that it doesn't modify the original object.
         mux = copy_.copy(mux)
         mux.streamers = [
             ZMQMuxStreamer(
-                s, self.pool, min_port=min_port, max_port=max_port,
+                s, min_port=min_port, max_port=max_port,
                 max_tries=max_tries, copy=copy, timeout=timeout)
             for s in mux.streamers
         ]
         super().__init__(mux)
 
+
+    def _activate(self):
+        super()._activate()
+        self.pool = POOLS[self.mode](self.n_jobs)
         # only works for threads - not available with process pool
         self.pool._thread_name_prefix = str(self)
+        for s in self.streamer.streamers:
+            s.pool = self.pool
 
-    def __enter__(self):
-        active = super().__enter__()
-        restart_pool(active.pool).__enter__()
-        return active
-
-    def __exit__(self, *exc):
-        suppressed = (super().__exit__(*exc), self.pool.__exit__(*exc))
-        return any(suppressed)
     def _deactivate(self):
         super()._deactivate()
         self.pool.shutdown(wait=True)
@@ -195,18 +190,6 @@ class ZMQMuxStreamer(_WarmedUpStreamer):
                 self._future.cancel()
         # cleanup
         self._terminate = self._future = None
-
-
-def restart_pool(pool):
-    # reset the pool instance - can't create a new instance because
-    # then the child streamers might have an outdated reference at
-    # activation.
-    # XXX: is there a better way to reuse a pool executor ??
-    pool.shutdown()
-    n_jobs = pool._max_workers
-    pool.__dict__.clear()
-    pool.__init__(n_jobs)
-    return pool
         super()._deactivate()
 
 
