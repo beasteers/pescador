@@ -159,7 +159,7 @@ class ZMQStreamer(Streamer):
             If `None`, then the streamer will wait indefinitely for
             subprocesses to terminate.
         '''
-        self.streamer = streamer
+        super().__init__(streamer)
         self.min_port = min_port
         self.max_port = max_port
         self.max_tries = max_tries
