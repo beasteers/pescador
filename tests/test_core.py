@@ -228,15 +228,15 @@ def test_streamer_context_copy():
 
         assert active_stream.is_activated_copy is True
 
+        # Exhaust the stream once.
+        query = list(active_stream)
+        assert stream_len == len(query)
+
         # Now, we should be able to iterate on active_stream without it
         # causing another copy.
         with active_stream as test_stream:
             assert active_stream is test_stream
             assert streamer.active == 1
-
-        # Exhaust the stream once.
-        query = list(active_stream)
-        assert stream_len == len(query)
 
     assert streamer.active == 0
 
@@ -284,4 +284,3 @@ def test_decorator():
     s = my_generator(5)
     assert isinstance(s, pescador.Streamer)
     assert list(s) == [0, 1, 2, 3, 4]
-

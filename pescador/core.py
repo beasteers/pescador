@@ -116,7 +116,7 @@ class Streamer(object):
     def __str__(self):
         # streamer get argument list
         args = ['{!r}'.format(x) for x in self.args]
-        args.extend('{}={!r}'.format(k, v) for k, v in self.kwargs)
+        args.extend('{}={!r}'.format(k, v) for k, v in six.iteritems(self.kwargs))
         args = '({})'.format(', '.join(args)) if args else ''
 
         # get streamer name

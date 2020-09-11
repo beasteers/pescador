@@ -43,7 +43,7 @@ class PreloadStreamer(_WarmedUpStreamer):
         except BaseException as e:
             self._exception = e
 
-    def _iterate_active(self):
+    def _iterate_active(self, max_iter=None):
         '''Iterate over items in the queue.'''
         while True:
             # custom blocking
